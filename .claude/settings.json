@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch",
+      "Read",
+      "Glob",
+      "Grep",
+      "Write",
+      "Edit",
+      "Bash(./scripts/scan-raw.sh)",
+      "Bash(./scripts/scan-raw.sh *)",
+      "Bash(./scripts/check-sources.sh)",
+      "Bash(./scripts/check-sources.sh *)",
+      "Bash(shasum *)",
+      "Bash(gh repo view *)",
+      "Bash(gh release view *)",
+      "Bash(gh release list *)",
+      "Bash(gh search *)",
+      "Bash(gh api *)"
+    ],
+    "deny": [
+      "Write(./raw/**)",
+      "Edit(./raw/**)",
+      "Bash(rm *)",
+      "Bash(mv ./raw/*)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(gh api -X *)",
+      "Bash(gh api --method *)",
+      "Bash(gh repo delete *)",
+      "Bash(gh repo create *)",
+      "Bash(gh pr *)",
+      "Bash(gh issue *)",
+      "Bash(gh gist *)",
+      "Bash(gh auth *)"
+    ]
+  }
+}

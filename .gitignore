@@ -1,0 +1,30 @@
+# Dependencies and build output
+node_modules/
+dist/
+build/
+out/
+
+# Packaged apps and installers
+*.app
+*.dmg
+*.exe
+
+# Vendored renderer libraries (npm install in app/ puts them back)
+app/renderer/vendor/
+
+# Claude Code: personal, machine-local settings
+.claude/settings.local.json
+
+# OS and editor cruft
+.DS_Store
+**/.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Logs and env files
+*.log
+npm-debug.log*
+.env
+.env.*

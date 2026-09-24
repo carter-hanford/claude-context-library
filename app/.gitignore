@@ -1,0 +1,22 @@
+# Dependencies: reinstalled via `npm install`, never committed
+node_modules/
+
+# Build output: regenerated via `npm run pack` / `npm run dist:*`
+dist/
+
+# Generated icon: `npm run icon` renders tools/icon-source.html to
+# build/icon.png, and the packaging scripts run it first.
+build/
+
+# Vendored renderer libraries. There is no bundler, so the renderer loads Vue
+# and marked as plain files; tools/vendor.js copies them out of node_modules on
+# postinstall, so `npm install` always puts them back.
+renderer/vendor/
+
+# OS cruft
+.DS_Store
+**/.DS_Store
+
+# Logs
+npm-debug.log*
+*.log

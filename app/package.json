@@ -1,0 +1,70 @@
+{
+  "name": "context-library-app",
+  "version": "1.0.0",
+  "description": "Context Library — a live window into raw/, personal-wiki/ and outputs/",
+  "productName": "Context Library",
+  "main": "main.js",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "node tools/vendor.js && node tools/brand-dev-shell.js",
+    "brand:dev-shell": "node tools/brand-dev-shell.js",
+    "vendor": "node tools/vendor.js",
+    "icon": "electron tools/render-icon.js",
+    "pack": "npm run icon && electron-builder --dir",
+    "install:app": "npm run icon && node tools/install-app.js",
+    "dist:win": "npm run icon && electron-builder --win --x64",
+    "dist:mac": "npm run icon && electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3",
+    "marked": "^15.0.7",
+    "vue": "^3.5.40"
+  },
+  "dependencies": {},
+  "build": {
+    "appId": "io.github.carter-hanford.context-library",
+    "productName": "Context Library",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*"
+    ],
+    "asar": true,
+    "publish": null,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Context Library"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity"
+    }
+  }
+}

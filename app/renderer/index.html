@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<!-- This app loads nothing from the network, and the policy below enforces
+     that rather than leaving it true by accident:
+       default-src 'self'   every resource comes from the app bundle
+       connect-src 'self'   no host is reachable; the library is read over the
+                            preload bridge, not over HTTP
+       img-src data:        raw/ images are handed over as data URIs by main.js
+       'unsafe-eval'        Vue's global build compiles templates at runtime
+                            with new Function. With the rules above, eval can
+                            only ever run code that already shipped in the app.
+     Inline scripts and inline event handlers stay blocked — which is also the
+     backstop for rendering markdown out of raw/ with v-html. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'" />
+<title>Context Library</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- No library found: the only state where the app asks for something. -->
+  <div v-if="!data.ok" class="app-shell">
+    <div class="empty" style="flex:1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <h3>No context library open</h3>
+      <p>Pick the folder that holds <code>raw/</code>, <code>personal-wiki/</code> and <code>outputs/</code>.</p>
+      <button class="btn" @click="pickRoot">Choose folder</button>
+    </div>
+  </div>
+
+  <div v-else class="app-shell" :class="{ docked: sync.open, 'docked-tall': sync.open && sync.state === 'ready' }">
+
+    <header class="topnav">
+      <div class="topnav-left">
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 32 32">
+            <defs>
+              <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#2563EB"/>
+                <stop offset="1" stop-color="#1E3A5F"/>
+              </linearGradient>
+            </defs>
+            <rect width="32" height="32" rx="8" fill="url(#brandGrad)"/>
+            <rect x="7" y="9" width="18" height="3.2" rx="1.6" fill="#fff"/>
+            <rect x="7" y="14.4" width="18" height="3.2" rx="1.6" fill="#fff" opacity=".62"/>
+            <rect x="7" y="19.8" width="10.5" height="3.2" rx="1.6" fill="#fff"/>
+          </svg>
+          <span class="brand-name">Context <em>Library</em></span>
+        </div>
+
+        <nav class="seg">
+          <button v-for="s in sections" :key="s.id"
+                  :class="{ active: view === s.id }"
+                  @click="go(s.id)" :title="s.hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="icons[s.icon]"></svg>
+            {{ s.label }}
+            <span v-if="s.count" class="count">{{ s.count }}</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="topnav-spacer"></div>
+
+      <div class="topnav-right">
+        <label class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input ref="searchBox" type="text" placeholder="Search the library" v-model="q" />
+        </label>
+
+        <button class="add-btn" @click="openCapture" title="Add a link, a note, or a file to raw/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Add
+        </button>
+
+        <button class="sync-btn" :class="{ running: sync.running }" @click="startSync()"
+                :title="sync.running ? 'Sync in progress' : 'Ingest new raw files into the wiki'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" v-html="icons.sync"></svg>
+          {{ sync.running ? 'Syncing' : 'Sync' }}
+          <span v-if="!sync.running && pendingCount" class="count">{{ pendingCount }}</span>
+        </button>
+
+        <div class="live" :class="{ pulsing: pulsing }" :title="'Watching ' + data.root">
+          <span class="live-dot"></span>{{ pulsing ? 'UPDATED' : 'LIVE' }}
+        </div>
+
+        <button class="icon-btn" @click="toggleTheme" :title="dark ? 'Light mode' : 'Dark mode'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" v-html="dark ? icons.sun : icons.moon"></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ============ Overview ============ -->
+    <div v-if="view === 'overview'" class="doc" style="flex:1">
+      <div class="doc-inner">
+        <div class="doc-head">
+          <div class="doc-kicker"><span class="path" :title="data.root">{{ shortRoot }}</span></div>
+          <h1>Overview</h1>
+        </div>
+
+        <div class="stat-grid">
+          <button class="stat" @click="go('raw', 'new')">
+            <div class="stat-n" :class="{ accent: data.stats.rawNew }">{{ data.stats.rawNew }}</div>
+            <div class="stat-l">Raw files not yet ingested</div>
+          </button>
+          <button class="stat" @click="go('raw', 'changed')">
+            <div class="stat-n" :class="{ warn: data.stats.rawChanged }">{{ data.stats.rawChanged }}</div>
+            <div class="stat-l">Changed since ingest</div>
+          </button>
+          <button class="stat" @click="go('wiki')">
+            <div class="stat-n">{{ data.stats.wikiTotal }}</div>
+            <div class="stat-l">Wiki pages</div>
+          </button>
+          <button class="stat" @click="go('wiki', 'untraced')">
+            <div class="stat-n" :class="{ bad: data.stats.untraced }">{{ data.stats.untraced }}</div>
+            <div class="stat-l">Pages missing a source</div>
+          </button>
+        </div>
+
+        <div class="card">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="icons.book"></svg>The wiki</h3>
+          <div class="stat-grid" style="margin:0">
+            <button class="stat" @click="go('wiki', 'sources')" style="box-shadow:none">
+              <div class="stat-n">{{ data.stats.sources }}</div><div class="stat-l">Sources</div>
+            </button>
+            <button class="stat" @click="go('wiki', 'topics')" style="box-shadow:none">
+              <div class="stat-n">{{ data.stats.topics }}</div><div class="stat-l">Topics</div>
+            </button>
+            <button class="stat" @click="go('wiki', 'ideas')" style="box-shadow:none">
+              <div class="stat-n">{{ data.stats.ideas }}</div><div class="stat-l">Ideas</div>
+            </button>
+            <button class="stat" @click="go('outputs')" style="box-shadow:none">
+              <div class="stat-n">{{ data.stats.outputsTotal }}</div><div class="stat-l">Outputs</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="icons.activity"></svg>Live activity</h3>
+          <div v-if="!feed.length" class="rail-empty" style="padding:24px 0">
+            Nothing has changed since the app opened.<br />Run an ingest in Claude Code and watch it land here.
+          </div>
+          <div v-else class="feed">
+            <button v-for="(f, i) in feed" :key="i" class="feed-row" @click="openPath(f.path)">
+              <span class="feed-time">{{ clock(f.at) }}</span>
+              <span class="pill" :class="f.kind === 'raw' ? 'new' : 'ingested'">{{ f.kind }}</span>
+              <span class="feed-path">{{ f.path }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ Chat ============ -->
+    <section v-else-if="view === 'chat'" class="chat">
+      <div class="chat-scroll" ref="chatScroll">
+        <div class="chat-inner">
+          <div v-if="!chat.turns.length" class="chat-hello">
+            <h2>Ask the library</h2>
+            <p>
+              It reads <code>personal-wiki/</code> before it answers, and tells you which pages it
+              used — and whether something is your own view or a source's claim.
+            </p>
+            <p class="chat-hello-note">
+              Typed a position rather than a question? Hit <strong>Remember</strong> instead of Send and
+              it gets written into <code>ideas/</code>, cited to today's conversation.<span v-if="!data.stats.ideas"> That half of the
+              library is currently empty.</span>
+            </p>
+            <div class="chat-seeds">
+              <button v-for="s in chatSeeds" :key="s" class="chip" @click="chat.draft = s; sendChat()">{{ s }}</button>
+            </div>
+          </div>
+
+          <div v-for="(t, i) in chat.turns" :key="i" class="turn" :class="t.role">
+            <div v-if="t.role === 'you'" class="turn-you">{{ t.text }}</div>
+            <template v-else>
+              <div v-if="t.steps && t.steps.length" class="turn-steps">
+                <span v-for="(s, j) in t.steps" :key="j" class="turn-step">
+                  <b>{{ s.tool }}</b> {{ s.target }}
+                </span>
+              </div>
+              <div v-if="t.text" class="prose" v-html="renderChat(t.text)" @click="onProseClick"></div>
+              <div v-else-if="t.pending" class="turn-wait">thinking…</div>
+              <div v-if="t.error" class="turn-error">{{ t.error }}</div>
+
+              <!-- It cannot write, so it proposes. One click turns the
+                   proposal into a scoped write turn in the same thread. -->
+              <div v-if="t.proposal" class="proposal" :class="{ done: t.proposal.applied }">
+                <div class="proposal-head">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="t.proposal.applied ? icons.check : icons.edit"></svg>
+                  {{ t.proposal.applied ? 'Applied to the library' : 'This changes the library' }}
+                </div>
+                <ul class="proposal-list">
+                  <li v-for="(item, k) in t.proposal.items" :key="k">{{ item }}</li>
+                </ul>
+                <button v-if="!t.proposal.applied" class="btn sm" :disabled="chat.busy"
+                        @click="applyProposal(t)">
+                  {{ t.proposal.running ? 'Applying…' : 'Apply' }}
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <div class="composer">
+        <div class="composer-inner">
+          <textarea ref="chatBox" v-model="chat.draft" rows="1"
+                    :placeholder="chat.busy ? 'Working…' : 'Ask what you know about something, or state what you think'"
+                    :disabled="chat.busy"
+                    @keydown.enter.exact.prevent="sendChat()"
+                    @input="growComposer"></textarea>
+          <div class="composer-actions">
+            <button v-if="chat.busy" class="btn ghost sm" @click="stopChat">Stop</button>
+            <template v-else>
+              <button class="btn ghost sm" :disabled="!chat.draft.trim()" @click="sendChat('remember')"
+                      title="Record this as your own view in personal-wiki/ideas/">Remember</button>
+              <button class="btn sm" :disabled="!chat.draft.trim()" @click="sendChat()">Send</button>
+            </template>
+          </div>
+        </div>
+        <div class="composer-foot">
+          <span>Enter sends · Shift+Enter for a new line{{ chat.sessionId ? ' · same thread' : '' }}</span>
+          <button v-if="chat.turns.length" class="linkish" @click="newThread">New thread</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Raw / Wiki / Outputs ============ -->
+    <div v-else class="workspace">
+
+      <aside class="rail">
+        <div class="rail-head">
+          <div class="rail-title">
+            <h2>{{ current.label }}</h2>
+            <span class="rail-count">{{ list.length }}{{ q ? ' found' : '' }}</span>
+          </div>
+          <div class="chips">
+            <button v-for="c in current.filters" :key="c.id"
+                    class="chip" :class="{ on: filter === c.id }"
+                    @click="filter = c.id">
+              <span v-if="c.color" class="dot" :style="{ background: c.color }"></span>
+              {{ c.label }}<span class="n">{{ c.count }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="rail-list">
+          <div v-if="!list.length" class="rail-empty">
+            <template v-if="q">Nothing matches “{{ q }}”.</template>
+            <template v-else-if="view === 'raw'">The junk drawer is empty.<br />Drop anything into <code>raw/</code> and it shows up here.</template>
+            <template v-else-if="view === 'wiki'">No wiki pages yet.<br />Say “process raw” in Claude Code.</template>
+            <template v-else>No outputs yet.<br />Ask Claude for a briefing.</template>
+          </div>
+
+          <button v-for="f in list" :key="f.path"
+                  class="rail-item"
+                  :class="{ active: selected === f.path, 'just-changed': recent.has(f.path) }"
+                  @click="select(f.path)">
+            <div class="rail-item-top">
+              <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="icons[iconFor(f)]"></svg>
+              <span class="rail-item-name">{{ f.title || f.question || f.name }}</span>
+              <span v-if="f.status && view === 'raw'" class="pill" :class="f.status">{{ f.status }}</span>
+              <span v-else-if="view === 'wiki' && !f.traced" class="pill untraced">no source</span>
+              <span v-else-if="view === 'wiki' && f.status" class="pill" :class="f.status">{{ f.status }}</span>
+            </div>
+            <div class="rail-item-sub">
+              <template v-if="view === 'raw'">{{ bytes(f.size) }}<span class="sep">·</span>{{ ago(f.mtime) }}</template>
+              <template v-else-if="view === 'wiki'">{{ f.section }}<span class="sep">·</span>{{ f.sources.length }} source{{ f.sources.length === 1 ? '' : 's' }}</template>
+              <template v-else>{{ f.generated || ago(f.mtime) }}</template>
+            </div>
+          </button>
+        </div>
+      </aside>
+
+      <main class="doc" ref="docPane">
+        <div v-if="!active" class="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" v-html="icons.file"></svg>
+          <h3>Nothing selected</h3>
+          <p>Pick something on the left.</p>
+        </div>
+
+        <div v-else class="doc-inner">
+          <div class="doc-head">
+            <div class="doc-kicker">
+              <span class="path">{{ active.path }}</span>
+              <button class="pill neutral" @click="reveal(active.path)">Reveal</button>
+              <button v-if="view === 'raw'" class="pill new" @click="startSync(active.path)"
+                      title="Read this file again and revise the wiki pages it fed">Resync</button>
+            </div>
+            <h1>{{ active.title || active.question || active.name }}</h1>
+            <div class="doc-meta">
+              <span v-if="active.status" class="pill" :class="active.status">{{ active.status }}</span>
+              <span v-if="active.type" class="tag">{{ active.type }}</span>
+              <span v-if="active.updated" class="tag">updated {{ active.updated }}</span>
+              <span v-if="active.generated" class="tag">generated {{ active.generated }}</span>
+              <span class="tag">{{ bytes(active.size) }}</span>
+              <span class="tag">changed {{ ago(active.mtime) }}</span>
+              <span v-for="t in (active.tags || [])" :key="t" class="tag">#{{ t }}</span>
+            </div>
+          </div>
+
+          <!-- Where this page came from -->
+          <div v-if="view === 'wiki'" class="card">
+            <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="icons.link"></svg>Traces back to</h3>
+            <div v-if="!active.sources.length" class="trace">
+              <div class="trace-row broken">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="icons.alert"></svg>
+                <span class="p">No source recorded — this page cannot be verified</span>
+              </div>
+            </div>
+            <div v-else class="trace">
+              <component v-for="s in active.sources" :key="s"
+                         :is="s.startsWith('raw/') && !active.broken.includes(s) ? 'button' : 'div'"
+                         class="trace-row" :class="{ broken: active.broken.includes(s) }"
+                         @click="s.startsWith('raw/') && !active.broken.includes(s) ? openPath(s) : null">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="active.broken.includes(s) ? icons.alert : (s.startsWith('raw/') ? icons.file : icons.chat)"></svg>
+                <span class="p">{{ s }}</span>
+                <span v-if="active.broken.includes(s)" class="pill untraced">missing</span>
+                <span v-else-if="s.startsWith('raw/')" class="go">OPEN →</span>
+              </component>
+            </div>
+          </div>
+
+          <div v-if="view === 'wiki' && active.origin" class="card">
+            <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="icons.globe"></svg>Origin</h3>
+            <dl class="origin-grid">
+              <template v-for="(v, k) in active.origin" :key="k">
+                <dt>{{ k }}</dt>
+                <dd>
+                  <a v-if="/^https?:\/\//.test(v)" @click="openUrl(v)">{{ v }}</a>
+                  <template v-else>{{ v }}</template>
+                </dd>
+              </template>
+            </dl>
+          </div>
+
+          <!-- Which wiki pages cite this raw file -->
+          <div v-if="view === 'raw'" class="card">
+            <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="icons.book"></svg>Used by</h3>
+            <div v-if="!backlinks.length" class="rail-empty" style="padding:10px 0; text-align:left">
+              No wiki page cites this file yet.
+            </div>
+            <div v-else class="trace">
+              <button v-for="p in backlinks" :key="p.path" class="trace-row" @click="openPath(p.path)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="icons.book"></svg>
+                <span class="t">{{ p.title }}</span>
+                <span class="pill neutral">{{ p.section }}</span>
+                <span class="go">OPEN →</span>
+              </button>
+            </div>
+          </div>
+
+          <div v-if="view === 'outputs' && active.wikiPages && active.wikiPages.length" class="card">
+            <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="icons.book"></svg>Built from</h3>
+            <div class="trace">
+              <button v-for="p in active.wikiPages" :key="p" class="trace-row" @click="openPath(p.startsWith('personal-wiki/') ? p : 'personal-wiki/' + p)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="icons.book"></svg>
+                <span class="p">{{ p }}</span>
+                <span class="go">OPEN →</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div v-if="content.kind === 'image'" class="img-wrap">
+            <img :src="content.dataUri" :alt="active.name" />
+          </div>
+          <div v-else-if="content.kind === 'text'" class="prose" v-html="rendered" @click="onProseClick"></div>
+          <div v-else-if="content.kind === 'too-big'" class="empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" v-html="icons.file"></svg>
+            <h3>Too large to preview</h3>
+            <p>{{ bytes(content.size) }}. It is safely in the library — open it in its own app.</p>
+            <button class="btn ghost" @click="reveal(active.path)">Reveal in Finder</button>
+          </div>
+          <div v-else-if="content.kind === 'other'" class="empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" v-html="icons.file"></svg>
+            <h3>{{ (active.ext || '').replace('.', '').toUpperCase() || 'Binary' }} file</h3>
+            <p>No preview for this format. Claude still reads it during an ingest.</p>
+            <button class="btn ghost" @click="reveal(active.path)">Reveal in Finder</button>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ============ Capture ============ -->
+    <Transition name="fade">
+      <div v-if="cap.open" class="scrim" @click.self="cap.open = false">
+        <div class="sheet" role="dialog" aria-label="Add to raw">
+          <header class="sheet-head">
+            <h3>Add to raw</h3>
+            <button class="icon-btn sm" @click="cap.open = false" title="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </header>
+
+          <div class="sheet-body">
+            <label class="field">
+              <span class="field-label">Link</span>
+              <input ref="capUrl" type="text" v-model="cap.url" @input="onUrlInput"
+                     placeholder="https://… — paste a tweet, an article, anything" spellcheck="false" />
+            </label>
+
+            <!-- What the fetch actually got. Shown before saving, because a
+                 link you cannot read is worth knowing about now, not later. -->
+            <div v-if="walledHost" class="grab thin">
+              <div class="grab-top"><strong>{{ walledHost }} blocks automated reads</strong></div>
+              <p>
+                Nothing will come back, and the ingest won't go around it. Paste the post text below
+                and it's saved with the link — that's the only way this content reaches the wiki.
+              </p>
+            </div>
+            <div v-else-if="cap.fetching" class="grab grab-busy">Reading the page…</div>
+            <div v-else-if="cap.fetched && cap.fetched.ok" class="grab" :class="{ thin: capThin }">
+              <div class="grab-top">
+                <strong>{{ cap.fetched.title || cap.fetched.site }}</strong>
+                <span class="pill" :class="capThin ? 'changed' : 'ingested'">
+                  <template v-if="capMedia">{{ capMedia }} image{{ capMedia === 1 ? '' : 's' }}</template>
+                  <template v-else>{{ cap.fetched.chars.toLocaleString() }} chars</template>
+                </span>
+              </div>
+              <p v-if="cap.fetched.text" class="grab-preview">{{ cap.fetched.text.slice(0, 220) }}</p>
+              <p v-if="capMedia">
+                {{ capMedia }} image{{ capMedia === 1 ? '' : 's' }} will be saved into <code>raw/</code>
+                next to the post, so an ingest can read the UI in {{ capMedia === 1 ? 'it' : 'them' }}.
+              </p>
+              <p v-else-if="capThin">
+                Barely anything came back. Paste the text below and it gets saved with the link.
+              </p>
+            </div>
+            <div v-else-if="cap.fetched" class="grab thin">
+              <div class="grab-top"><strong>Couldn't read that page</strong></div>
+              <p>{{ cap.fetched.reason }} The link still gets saved — paste the text below if you want the content too.</p>
+            </div>
+
+            <label class="field">
+              <span class="field-label">Your take <em>— optional, and the more valuable half</em></span>
+              <textarea v-model="cap.note" rows="3" placeholder="Why you kept this. Gets tracked as your view, separately from what the source claims."></textarea>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Paste the text <em>— optional, for tweets and paywalls</em></span>
+              <textarea v-model="cap.text" rows="4" placeholder="Paste the actual content here if the fetch above came up short."></textarea>
+            </label>
+          </div>
+
+          <footer class="sheet-foot">
+            <span class="sheet-hint">Writes one file into <code>raw/</code>. Nothing is sent anywhere.</span>
+            <div class="sheet-actions">
+              <button class="btn ghost" @click="cap.open = false">Cancel</button>
+              <button class="btn" :disabled="!canSaveCapture" @click="saveCapture">Save to raw</button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Drag anything onto the window -->
+    <Transition name="fade">
+      <div v-if="dragging" class="dropzone">
+        <div class="dropzone-inner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
+          <h3>Drop it in raw</h3>
+          <p>Screenshots, PDFs, transcripts — anything. The files are copied, not moved.</p>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ============ Sync dock ============ -->
+    <Transition name="dock">
+      <section v-if="sync.open" class="dock" :class="{ tall: sync.state === 'ready' }">
+        <header class="dock-head">
+          <h3>
+            <span class="dock-dot" :class="sync.state"></span>
+            {{ dockTitle }}
+          </h3>
+          <div class="dock-meta">
+            <span v-if="modelLabel" class="pill neutral" title="Inherited from Claude Code's own setting — change it with /model, or pin one with CONTEXT_LIBRARY_SYNC_MODEL">{{ modelLabel }}</span>
+            <span v-if="sync.running">{{ elapsed }}</span>
+            <!-- A run that never reached the API reports 0.00, which is true and
+                 not worth a line of chrome. -->
+            <span v-if="costLabel" :title="costTitle">{{ costLabel }}</span>
+            <button v-if="sync.running" class="btn ghost sm" @click="cancelSync">Cancel</button>
+            <button v-else class="icon-btn sm" @click="sync.open = false" title="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- Claude Code is not installed: the one blocking state -->
+        <div v-if="sync.state === 'no-cli'" class="dock-body">
+          <p class="dock-note">
+            Sync runs Claude Code inside <code :title="data.root">{{ rootName }}</code>, so the ingest
+            follows the rules in <code>CLAUDE.md</code> rather than a second copy of them. It isn't
+            installed on this machine yet.
+          </p>
+          <pre class="dock-cmd"><code>npm i -g @anthropic-ai/claude-code</code></pre>
+          <p class="dock-note">Then sign in once with <code>claude</code> in a terminal.</p>
+          <button class="btn" @click="recheckCli">Check again</button>
+        </div>
+
+        <!-- Installed, but never signed in. Sign-in is interactive, so it has
+             to happen in a real terminal — the app can only say so clearly. -->
+        <div v-else-if="sync.state === 'no-auth'" class="dock-body">
+          <p class="dock-note">
+            Claude Code is installed but not signed in, so the run stopped before it read anything.
+            Sign in once in a terminal — it's interactive, so it can't happen from here.
+          </p>
+          <pre class="dock-cmd"><code>claude</code></pre>
+          <p class="dock-note">
+            Then run <code>/login</code> in that session and follow the browser prompt. Come back and
+            hit Sync again.
+          </p>
+          <button class="btn" @click="startSync()">Retry sync</button>
+        </div>
+
+        <!-- Ready: what is about to be read, and on which model -->
+        <div v-else-if="sync.state === 'ready'" class="dock-body ready">
+          <div class="ready-grid">
+            <div class="ready-files">
+              <h4>{{ sync.target ? 'Will be re-ingested' : 'Will be ingested' }}</h4>
+              <p v-if="sync.target" class="ready-sub" style="margin:0 0 10px">
+                Its existing pages get revised in place, not duplicated.
+              </p>
+              <ul>
+                <li v-for="f in pending" :key="f.path">
+                  <span class="pill" :class="f.status">{{ f.status }}</span>
+                  <span class="ready-name">{{ f.name }}</span>
+                  <span class="ready-size">{{ bytes(f.size) }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="ready-model">
+              <h4>Model</h4>
+              <div class="select">
+                <select v-model="sync.pick">
+                  <option v-for="m in modelOptions" :key="m.id" :value="m.id">{{ m.label }}</option>
+                </select>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+              <p class="ready-note">{{ pickedNote }}</p>
+              <p v-if="sync.pick === 'default' && currentModelName" class="ready-sub">
+                Currently {{ currentModelName }}.
+              </p>
+              <p class="ready-sub">Remembered for next time.</p>
+            </div>
+          </div>
+
+          <div class="ready-go">
+            <button class="btn ghost" @click="sync.open = false">Not now</button>
+            <button class="btn" ref="goBtn" @click="runSync">{{ sync.target ? 'Re-ingest' : 'Start sync' }}</button>
+          </div>
+        </div>
+
+        <div v-else class="dock-body">
+          <div class="dock-log" ref="dockLog">
+            <div v-for="(e, i) in sync.log" :key="i" class="dock-row" :class="e.kind">
+              <span class="dock-tool" v-if="e.tool">{{ e.tool }}</span>
+              <span class="dock-text">{{ e.target || e.text }}</span>
+            </div>
+            <div v-if="sync.running" class="dock-row working">
+              <span class="dock-tool">···</span>
+              <span class="dock-text">working</span>
+            </div>
+          </div>
+          <p v-if="sync.summary" class="dock-summary">{{ sync.summary }}</p>
+        </div>
+      </section>
+    </Transition>
+
+    <Transition name="toast">
+      <div v-if="toast" class="toast">{{ toast }}</div>
+    </Transition>
+  </div>
+</div>
+
+<script src="vendor/vue.global.prod.js"></script>
+<script src="vendor/marked.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
