@@ -2,7 +2,7 @@
 /*
  * Puts the product name in the macOS menu bar during a dev run.
  *
- * The menu bar's first item — the bold one next to the Apple logo — is drawn
+ * The menu bar's first item, the bold one next to the Apple logo, is drawn
  * by macOS from the running application bundle's CFBundleName. It is not the
  * Electron menu's own label, and setting `app.setName()` does not move it.
  * That trips people up because app.setName() *does* fix everything else:
@@ -12,7 +12,7 @@
  *
  * A packaged build has no problem: electron-builder writes CFBundleName from
  * `productName`. But `npm start` boots the stock Electron.app out of
- * node_modules, whose bundle is named "Electron" — so that is what the menu
+ * node_modules, whose bundle is named "Electron", so that is what the menu
  * bar said.
  *
  * This rewrites CFBundleName and CFBundleDisplayName in that local bundle.

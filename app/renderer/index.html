@@ -11,7 +11,7 @@
        'unsafe-eval'        Vue's global build compiles templates at runtime
                             with new Function. With the rules above, eval can
                             only ever run code that already shipped in the app.
-     Inline scripts and inline event handlers stay blocked — which is also the
+     Inline scripts and inline event handlers stay blocked, which is also the
      backstop for rendering markdown out of raw/ with v-html. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>Context Library</title>
@@ -162,7 +162,7 @@
             <h2>Ask the library</h2>
             <p>
               It reads <code>personal-wiki/</code> before it answers, and tells you which pages it
-              used — and whether something is your own view or a source's claim.
+              used, and whether something is your own view or a source's claim.
             </p>
             <p class="chat-hello-note">
               Typed a position rather than a question? Hit <strong>Remember</strong> instead of Send and
@@ -309,7 +309,7 @@
             <div v-if="!active.sources.length" class="trace">
               <div class="trace-row broken">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="icons.alert"></svg>
-                <span class="p">No source recorded — this page cannot be verified</span>
+                <span class="p">No source recorded. This page cannot be verified.</span>
               </div>
             </div>
             <div v-else class="trace">
@@ -373,7 +373,7 @@
           <div v-else-if="content.kind === 'too-big'" class="empty">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" v-html="icons.file"></svg>
             <h3>Too large to preview</h3>
-            <p>{{ bytes(content.size) }}. It is safely in the library — open it in its own app.</p>
+            <p>{{ bytes(content.size) }}. It is safely in the library. Open it in its own app.</p>
             <button class="btn ghost" @click="reveal(active.path)">Reveal in Finder</button>
           </div>
           <div v-else-if="content.kind === 'other'" class="empty">
@@ -401,7 +401,7 @@
             <label class="field">
               <span class="field-label">Link</span>
               <input ref="capUrl" type="text" v-model="cap.url" @input="onUrlInput"
-                     placeholder="https://… — paste a tweet, an article, anything" spellcheck="false" />
+                     placeholder="https://… (paste a tweet, an article, anything)" spellcheck="false" />
             </label>
 
             <!-- What the fetch actually got. Shown before saving, because a
@@ -410,7 +410,7 @@
               <div class="grab-top"><strong>{{ walledHost }} blocks automated reads</strong></div>
               <p>
                 Nothing will come back, and the ingest won't go around it. Paste the post text below
-                and it's saved with the link — that's the only way this content reaches the wiki.
+                and it's saved with the link. That's the only way this content reaches the wiki.
               </p>
             </div>
             <div v-else-if="cap.fetching" class="grab grab-busy">Reading the page…</div>
@@ -433,16 +433,16 @@
             </div>
             <div v-else-if="cap.fetched" class="grab thin">
               <div class="grab-top"><strong>Couldn't read that page</strong></div>
-              <p>{{ cap.fetched.reason }} The link still gets saved — paste the text below if you want the content too.</p>
+              <p>{{ cap.fetched.reason }} The link still gets saved. Paste the text below if you want the content too.</p>
             </div>
 
             <label class="field">
-              <span class="field-label">Your take <em>— optional, and the more valuable half</em></span>
+              <span class="field-label">Your take <em>(optional, and the more valuable half)</em></span>
               <textarea v-model="cap.note" rows="3" placeholder="Why you kept this. Gets tracked as your view, separately from what the source claims."></textarea>
             </label>
 
             <label class="field">
-              <span class="field-label">Paste the text <em>— optional, for tweets and paywalls</em></span>
+              <span class="field-label">Paste the text <em>(optional, for tweets and paywalls)</em></span>
               <textarea v-model="cap.text" rows="4" placeholder="Paste the actual content here if the fetch above came up short."></textarea>
             </label>
           </div>
@@ -464,7 +464,7 @@
         <div class="dropzone-inner">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
           <h3>Drop it in raw</h3>
-          <p>Screenshots, PDFs, transcripts — anything. The files are copied, not moved.</p>
+          <p>Screenshots, PDFs, transcripts, anything. The files are copied, not moved.</p>
         </div>
       </div>
     </Transition>
@@ -478,7 +478,7 @@
             {{ dockTitle }}
           </h3>
           <div class="dock-meta">
-            <span v-if="modelLabel" class="pill neutral" title="Inherited from Claude Code's own setting — change it with /model, or pin one with CONTEXT_LIBRARY_SYNC_MODEL">{{ modelLabel }}</span>
+            <span v-if="modelLabel" class="pill neutral" title="Inherited from Claude Code's own setting. Change it with /model, or pin one with CONTEXT_LIBRARY_SYNC_MODEL.">{{ modelLabel }}</span>
             <span v-if="sync.running">{{ elapsed }}</span>
             <!-- A run that never reached the API reports 0.00, which is true and
                  not worth a line of chrome. -->
@@ -503,11 +503,11 @@
         </div>
 
         <!-- Installed, but never signed in. Sign-in is interactive, so it has
-             to happen in a real terminal — the app can only say so clearly. -->
+             to happen in a real terminal. The app can only say so clearly. -->
         <div v-else-if="sync.state === 'no-auth'" class="dock-body">
           <p class="dock-note">
             Claude Code is installed but not signed in, so the run stopped before it read anything.
-            Sign in once in a terminal — it's interactive, so it can't happen from here.
+            Sign in once in a terminal. It's interactive, so it can't happen from here.
           </p>
           <pre class="dock-cmd"><code>claude</code></pre>
           <p class="dock-note">

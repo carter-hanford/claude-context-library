@@ -1,7 +1,7 @@
 {
   "name": "context-library-app",
   "version": "1.0.0",
-  "description": "Context Library — a live window into raw/, personal-wiki/ and outputs/",
+  "description": "Context Library: a live window into raw/, personal-wiki/ and outputs/",
   "productName": "Context Library",
   "main": "main.js",
   "private": true,

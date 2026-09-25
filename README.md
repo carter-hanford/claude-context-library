@@ -193,6 +193,10 @@ The Claude Code pieces doing the work:
 You'll need Claude Code, signed in. The rest is optional: Node 22+ for the app, `gh` signed in if you
 want GitHub links verified, and `ffmpeg` if you want still frames from saved videos.
 
+## About
+
+I'm [Carter Hanford](https://www.linkedin.com/in/carter-hanford), a Product Owner in St. Louis. If you run more than one Claude Code session at a time, the companion repo [claude-code-team-playbook](https://github.com/carter-hanford/claude-code-team-playbook) is the operating model I use for that.
+
 ## License
 
 MIT. See [LICENSE](LICENSE). The app includes the Catamaran font (Copyright 2020 The Catamaran Project

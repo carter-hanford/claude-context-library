@@ -14,7 +14,7 @@ if [ ! -f "$ELECTRON_BIN" ]; then
   echo ""
   echo "Electron binary is missing (likely stripped by Gatekeeper/AV). Reinstalling..."
   rm -rf node_modules/electron
-  # No version pinned here on purpose — package.json is the one place the
+  # No version pinned here on purpose: package.json is the one place the
   # version is decided, so a repair can never quietly downgrade the app.
   npm install
 fi

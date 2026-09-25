@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scan-raw.sh — report which files in raw/ are NEW, CHANGED, or already ingested.
+# scan-raw.sh: report which files in raw/ are NEW, CHANGED, or already ingested.
 # Matching is by short content hash, recorded in personal-wiki/_ingest-log.md.
 
 set -euo pipefail
@@ -29,7 +29,7 @@ while IFS= read -r -d '' f; do
     echo "NEW      $hash  $rel"
     new=$((new + 1))
   fi
-  # `_`-prefixed directories are attachments, not drops — raw/_media/ holds the
+  # `_`-prefixed directories are attachments, not drops: raw/_media/ holds the
   # images and video frames the app pulled down alongside a captured link. They
   # belong to that capture's own row, so listing them as separate NEW files
   # would bury the things Carter actually put here.

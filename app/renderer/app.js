@@ -1,10 +1,10 @@
-/* Context Library — renderer.
+/* Context Library: renderer.
  *
  * A read-only window onto the library. Every byte it shows arrives over the
  * preload bridge; nothing here touches the filesystem, and nothing here
  * writes. The one thing it does that a folder in Finder does not is hold the
- * three folders against each other — a wiki page next to the raw file it came
- * from, a raw file next to the pages that cite it — and keep doing it while
+ * three folders against each other (a wiki page next to the raw file it came
+ * from, a raw file next to the pages that cite it) and keep doing it while
  * Claude edits the library underneath.
  */
 
@@ -33,7 +33,7 @@ const icons = {
 };
 
 /* Markdown out of the library is written by Claude and by Carter, so this is
-   not a hostile-input problem — but v-html is v-html. The CSP already stops
+   not a hostile-input problem. But v-html is v-html. The CSP already stops
    an inline handler or a remote script from running; this removes them
    anyway, so the two defences do not depend on each other. */
 function sanitize(html) {
@@ -173,13 +173,13 @@ const AppRoot = {
     },
 
     // A short, honest gloss per model. Anything the CLI offers that isn't
-    // listed here still appears — unlabelled rather than mislabelled.
+    // listed here still appears, unlabelled rather than mislabelled.
     modelOptions() {
       const notes = {
         default: 'Whatever Claude Code is set to',
-        opus: 'Strongest judgement — best for attribution calls',
+        opus: 'Strongest judgement, best for attribution calls',
         sonnet: 'Balanced; noticeably lighter on your usage limits',
-        haiku: 'Fastest and lightest — fine for bulk, plain material',
+        haiku: 'Fastest and lightest, fine for bulk, plain material',
         fable: '',
         best: 'Let Claude Code pick per request',
         opusplan: 'Opus to plan, then a lighter model to execute',
@@ -254,7 +254,7 @@ const AppRoot = {
 
     /* What the dollar figure actually is. Claude Code computes it locally from
        token counts at API list prices. On a subscription login that is not a
-       charge — usage draws against plan limits — so the app must not print a
+       charge (usage draws against plan limits), so the app must not print a
        bare dollar amount and let it read as a bill. */
     costLabel() {
       if (!this.sync.costUsd) return '';
@@ -264,7 +264,7 @@ const AppRoot = {
     costTitle() {
       return this.sync.billed
         ? 'Billed per token to the API key in use. Estimated locally at list prices; check the Console for the authoritative figure.'
-        : 'Not a charge. Claude Code estimates this locally at API list prices — your subscription bills by usage limits, not per run.';
+        : 'Not a charge. Claude Code estimates this locally at API list prices. Your subscription bills by usage limits, not per run.';
     },
 
     elapsed() {
@@ -277,7 +277,7 @@ const AppRoot = {
       return [
         { id: 'overview', label: 'Overview', icon: 'grid', count: 0, hint: 'What needs attention' },
         { id: 'chat', label: 'Chat', icon: 'chat', count: 0, hint: 'Ask the library, or tell it what you think' },
-        { id: 'raw', label: 'Raw', icon: 'inbox', count: s.rawNew || 0, hint: 'The junk drawer — Carter writes, Claude reads' },
+        { id: 'raw', label: 'Raw', icon: 'inbox', count: s.rawNew || 0, hint: 'The junk drawer: Carter writes, Claude reads' },
         { id: 'wiki', label: 'Wiki', icon: 'book', count: 0, hint: 'The organized, cited version' },
         { id: 'outputs', label: 'Outputs', icon: 'doc', count: 0, hint: 'Briefings and reports' },
       ];
@@ -315,7 +315,7 @@ const AppRoot = {
       return { label: 'Outputs', filters: [{ id: 'all', label: 'All', count: this.data.outputs.length }] };
     },
 
-    // Everything in the current view, before filtering — what `active` is
+    // Everything in the current view, before filtering: what `active` is
     // looked up in, so a selection survives a filter change.
     pool() {
       if (this.view === 'raw') return this.data.raw.filter((f) => f.status !== 'ignored');
@@ -476,7 +476,7 @@ const AppRoot = {
         const turn = this.chat.turns[this.chat.turns.length - 1];
         turn.pending = false;
         turn.error = res.reason === 'no-cli'
-          ? 'Claude Code is not installed — see the Sync panel.'
+          ? 'Claude Code is not installed. See the Sync panel.'
           : res.reason === 'busy' ? 'Still answering the last one.' : 'Could not start.';
         this.chat.busy = false;
       }
@@ -486,8 +486,8 @@ const AppRoot = {
 
     /* Claude Code keeps the session on disk and --resume finds it anywhere on
        the machine, so the only thing that was lost on quit was this app's
-       memory of the id. Storing it — with the visible transcript, since a
-       resumed thread showing an empty scrollback is worse than no thread —
+       memory of the id. Storing it (with the visible transcript, since a
+       resumed thread showing an empty scrollback is worse than no thread)
        makes "New thread" a decision rather than something that happens to you. */
     saveThread() {
       // Plain objects: reactive Proxies do not survive structured clone.
@@ -624,7 +624,7 @@ const AppRoot = {
       this.$nextTick(() => this.$refs.capUrl && this.$refs.capUrl.focus());
     },
 
-    // Fetch while you type, but only once you've stopped — and only for
+    // Fetch while you type, but only once you've stopped, and only for
     // something that actually looks like a URL, so a half-typed host does not
     // fire off requests.
     onUrlInput() {
@@ -657,7 +657,7 @@ const AppRoot = {
         posted: f && f.ok ? f.posted : '',
         // Rebuilt as plain objects on purpose: f.media is a Vue reactive
         // Proxy, and structured clone across the IPC boundary cannot copy a
-        // Proxy — it fails with "An object could not be cloned".
+        // Proxy. It fails with "An object could not be cloned".
         media: f && f.ok && Array.isArray(f.media)
           ? f.media.map((m) => ({
             type: String(m.type || ''),
@@ -689,7 +689,7 @@ const AppRoot = {
       for (const file of fileList) {
         try { paths.push(window.capture.pathFor(file)); } catch (e) { /* not a real file */ }
       }
-      if (!paths.length) { this.say('Nothing droppable there — try the Add button for a link'); return; }
+      if (!paths.length) { this.say('Nothing droppable there. Try the Add button for a link.'); return; }
 
       const res = await window.capture.addFiles(paths.filter(Boolean));
       if (!res.ok) { this.say(res.reason || 'Could not add those'); return; }
@@ -704,8 +704,8 @@ const AppRoot = {
     /* ---- sync ---- */
 
     // The button opens the dock; it no longer starts the run. A sync writes to
-    // the wiki, so seeing which files are about to be read — and on which
-    // model — before agreeing is worth one extra click.
+    // the wiki, so seeing which files are about to be read (and on which
+    // model) before agreeing is worth one extra click.
     //
     // With `target`, this is a resync: one already-ingested file, re-read and
     // its existing pages revised. That path skips the pending check, since the
@@ -715,8 +715,8 @@ const AppRoot = {
 
       // Only a string is a target. `@click="startSync"` without parentheses
       // hands Vue's MouseEvent in as the first argument, which turned every
-      // press of the Sync button into a resync of a file that does not exist
-      // — the run died instantly on a bad target. The call sites pass `()`
+      // press of the Sync button into a resync of a file that does not exist.
+      // The run died instantly on a bad target. The call sites pass `()`
       // now; this makes the mistake harmless if it comes back.
       this.sync.target = typeof target === 'string' && target ? target : null;
       target = this.sync.target;
@@ -724,7 +724,7 @@ const AppRoot = {
       // Spawning Claude Code to be told there is nothing to do is a slow way
       // to learn something the scan already knows.
       if (!target && !this.pendingCount) {
-        this.say('Nothing new in raw/ — already in sync');
+        this.say('Nothing new in raw/, already in sync');
         return;
       }
 
@@ -808,7 +808,7 @@ const AppRoot = {
       else if (e.kind === 'cancelled') { this.sync.state = 'cancelled'; this.sync.summary = 'Stopped. Anything already written stays.'; }
       else if (e.kind === 'done') {
         // Claude Code reports a missing login as the *result*, with exit code
-        // 0 — so the process closing cleanly says nothing about whether the
+        // 0, so the process closing cleanly says nothing about whether the
         // run worked. It is also the likeliest first-run failure, and "Please
         // run /login" is not something you can do from inside this app.
         const noAuth = e.isError && /not logged in|please run \/login|authentication_failed|invalid api key/i.test(e.text || '');
@@ -962,7 +962,7 @@ const AppRoot = {
   },
 };
 
-// Exposed so a dev run can drive the UI from outside — see the capture hook
+// Exposed so a dev run can drive the UI from outside. See the capture hook
 // in main.js. Harmless in a packaged build: the renderer is already the only
 // thing that can reach it, and it can only do what the UI itself can do.
 window.__app = createApp(AppRoot).mount('#app');

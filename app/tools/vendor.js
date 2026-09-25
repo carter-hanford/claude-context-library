@@ -2,7 +2,7 @@
 /*
  * Copies the two runtime libraries out of node_modules into renderer/vendor/.
  *
- * The renderer has no bundler and no network — the CSP in index.html is
+ * The renderer has no bundler and no network: the CSP in index.html is
  * `default-src 'self'`, so a CDN <script> would be blocked, not slow. Both
  * libraries therefore have to sit inside the app bundle as plain files, and
  * `files` in package.json only ships main.js, preload.js and renderer/**.
@@ -27,7 +27,7 @@ fs.mkdirSync(OUT, { recursive: true });
 for (const [from, to] of FILES) {
   const src = path.join(ROOT, 'node_modules', from);
   if (!fs.existsSync(src)) {
-    console.warn(`vendor: ${from} not installed — skipped`);
+    console.warn(`vendor: ${from} not installed, skipped`);
     continue;
   }
   fs.copyFileSync(src, path.join(OUT, to));

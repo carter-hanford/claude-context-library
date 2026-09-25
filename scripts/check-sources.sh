@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check-sources.sh — traceability audit.
+# check-sources.sh: traceability audit.
 # Every wiki page must cite at least one source, and every raw/ path it cites must exist.
 
 set -uo pipefail

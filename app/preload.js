@@ -1,5 +1,5 @@
 // The renderer has no Node access and file:// defeats fetch(), so every read
-// of the library goes through here. This only forwards — main.js owns the
+// of the library goes through here. This only forwards: main.js owns the
 // path checks, the allowlisted schemes, and what a scan is allowed to return.
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
@@ -20,7 +20,7 @@ contextBridge.exposeInMainWorld('library', {
   },
 });
 
-// Adding to raw/ — Carter's own folder, so the app acts on his behalf here and
+// Adding to raw/: Carter's own folder, so the app acts on his behalf here and
 // nowhere else. Capture writes one markdown file; addFiles copies what he drags
 // onto the window.
 contextBridge.exposeInMainWorld('capture', {
@@ -40,7 +40,7 @@ contextBridge.exposeInMainWorld('chat', {
   send: (message, sessionId, mode) => ipcRenderer.invoke('chat:send', message, sessionId, mode),
   stop: () => ipcRenderer.invoke('chat:stop'),
 
-  // Kept in a file by the main process, not localStorage — see the note there.
+  // Kept in a file by the main process, not localStorage. See the note there.
   saveThread: (data) => ipcRenderer.invoke('thread:save', data),
   loadThread: () => ipcRenderer.invoke('thread:load'),
 

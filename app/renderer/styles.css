@@ -8,11 +8,11 @@
 }
 
 :root {
-  /* Brand constants — identical in both themes.
+  /* Brand constants: identical in both themes.
      Three blues, because one is never enough: --blue is a fill with white on
      it (5.17:1), --blue-deep is its hover (6.64:1), and --blue-text is the
      one used as ink on a light surface (6.71:1 on --brand-wash). Reaching
-     for --blue as text is the mistake this split exists to prevent — it
+     for --blue as text is the mistake this split exists to prevent. It
      measures 4.46:1 on the wash, under the bar. */
   --blue: #2563EB;
   --blue-deep: #1D4FD8;
@@ -20,7 +20,7 @@
   --slate: #1E3A5F;
   --navy: #0F1B2D;
 
-  /* Status. Never colour alone — every status in this app carries a glyph
+  /* Status. Never colour alone: every status in this app carries a glyph
      and a word too, so these only have to be legible, not self-explanatory. */
   --ok: #0F7B34;
   --orange: #D98C0F;
@@ -38,7 +38,7 @@
 
   --on-brand: #FFFFFF;
 
-  /* Theme tokens — light (default) */
+  /* Theme tokens: light (default) */
   --page-bg: #EEF2F8;
   --surface: #FFFFFF;
   --surface-sunken: #F3F5F9;
@@ -99,7 +99,7 @@
 
 /* The browser's default focus ring is drawn in the operating system's accent
    colour, so a Mac set to orange puts an orange box around a tab in a blue
-   product. Replaced, not deleted — a keyboard user has to see where they are.
+   product. Replaced, not deleted: a keyboard user has to see where they are.
    :focus-visible is what stops a clicked control keeping a ring it never
    needed: the browser fires it for keyboard focus and skips it for a click. */
 :focus { outline: none; }
@@ -150,7 +150,7 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
 }
 /* macOS draws the traffic lights over the top-left corner with
    titleBarStyle:'hiddenInset', so the bar owes them room on that platform
-   only — everywhere else the space would just be a dent. */
+   only. Everywhere else the space would just be a dent. */
 :root.is-mac .topnav { padding-left: 84px; }
 
 /* Every control inside a draggable bar has to opt out, or clicking it starts
@@ -248,7 +248,7 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
 .icon-btn:hover { background: var(--brand-wash); color: var(--blue-text); }
 .icon-btn:active { transform: scale(.92); }
 
-/* Live indicator — the app's whole reason for existing is that it updates
+/* Live indicator. The app's whole reason for existing is that it updates
    while you watch, so it says so. */
 .live {
   display: flex; align-items: center; gap: 7px;
@@ -293,7 +293,7 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
   white-space: pre-wrap;
 }
 
-/* What it read to answer. Kept small and grey — it is provenance, not content,
+/* What it read to answer. Kept small and grey: it is provenance, not content,
    but a library that will not say where it looked is worth less. */
 .turn-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .turn-step {
@@ -310,7 +310,7 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
   width: 6px; height: 6px; margin-left: 7px; border-radius: 50%;
   background: var(--blue); animation: pulse 1.1s ease-out infinite;
 }
-/* The proposal card. Deliberately looks like an action, not like prose —
+/* The proposal card. Deliberately looks like an action, not like prose:
    the whole point is that approving it is one press rather than a
    re-typed instruction. */
 .proposal {
@@ -460,7 +460,7 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
   box-shadow: 0 0 0 3px var(--brand-wash);
 }
 
-/* What the fetch came back with, shown before saving — a link you can't read
+/* What the fetch came back with, shown before saving. A link you can't read
    is worth knowing about now rather than at ingest time. */
 .grab {
   margin: -6px 0 16px;
@@ -481,7 +481,7 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
 
 .btn:disabled { opacity: .45; pointer-events: none; }
 
-/* Drop target — the whole window, because dropping a file anywhere should
+/* Drop target: the whole window, because dropping a file anywhere should
    mean the same thing. */
 .dropzone {
   position: fixed; inset: 0; z-index: 90;
@@ -528,7 +528,7 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* The dock. Claude is editing the library while this is open, so it sits over
-   the workspace rather than resizing it — the rail behind it keeps flashing
+   the workspace rather than resizing it: the rail behind it keeps flashing
    rows as the files land, and that is the thing worth watching. */
 .dock {
   position: fixed; left: 0; right: 0; bottom: 0;
@@ -572,7 +572,7 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
 
 .dock-body { flex: 1; min-height: 0; overflow-y: auto; padding: 14px var(--page-pad-x) 18px; }
 
-/* Ready state — the pre-flight. A sync writes to the wiki, so this is the
+/* Ready state: the pre-flight. A sync writes to the wiki, so this is the
    moment to see the work and pick what runs it. */
 .dock-body.ready { display: flex; flex-direction: column; }
 .ready-grid {
@@ -678,7 +678,7 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
 .dock-enter-from, .dock-leave-to { transform: translateY(100%); opacity: .6; }
 
 /* The dock floats over the workspace, so the scrollers underneath owe it
-   room — otherwise the last few rail rows and the end of a document sit
+   room. Otherwise the last few rail rows and the end of a document sit
    permanently behind it and cannot be scrolled into view. */
 .app-shell.docked .rail-list { padding-bottom: 306px; }
 .app-shell.docked .doc-inner { padding-bottom: 330px; }
@@ -809,7 +809,7 @@ button.pill { border: none; }
 .doc-inner { max-width: 860px; margin: 0 auto; padding: 28px var(--page-pad-x) 80px; }
 
 .doc-head { margin-bottom: 22px; }
-/* The file's own path. Left in mono lower case on purpose — a hyphenated path
+/* The file's own path. Left in mono lower case on purpose: a hyphenated path
    set in spaced uppercase is the hardest possible way to read a filename. */
 .doc-kicker {
   display: flex; align-items: center; gap: 8px;
